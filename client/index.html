@@ -5,10 +5,27 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Chat Program</title>
-    <link rel="stylesheet" href="/style.css">
-    <script src="/script.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Hello World</h1>
+    <div class="container">
+        <h1>My Chat Program</h1>
+        <div id="user-setup">
+            <input type="text" id="username" placeholder="Enter your username">
+            <button onclick="setUsername()">Set Username</button>
+        </div>
+        <div id="chat-setup">
+            <input type="text" id="chatroom" placeholder="Enter chatroom name">
+            <button onclick="joinChatroom()">Join Chatroom</button>
+        </div>
+        <div id="chat-window">
+            <div id="chat-messages"></div>
+            <div class="message-input">
+                <input type="text" id="message" placeholder="Type a message">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>

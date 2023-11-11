@@ -1,21 +1,51 @@
 const WebSocket = require("ws");
+const clients = new Set();
 
-// Intiiate the websocket server
 const initializeWebsocketServer = (server) => {
   const websocketServer = new WebSocket.Server({ server });
-  websocketServer.on("connection", onConnection);
+
+  websocketServer.on("connection", (ws) => {
+    clients.add(ws);
+    console.log("New websocket connection");
+
+    ws.on("message", (message) => {
+      console.log("Message received: " + message);
+      handleMessage(ws, message);
+    });
+
+    ws.on("close", () => {
+      clients.delete(ws);
+      console.log("Websocket connection closed");
+    });
+  });
 };
 
-// If a new connection is established, the onConnection function is called
-const onConnection = (ws) => {
-  console.log("New websocket connection");
-  ws.on("message", (message) => onMessage(ws, message));
+const handleMessage = (ws, message) => {
+  try {
+    const data = JSON.parse(message);
+
+    switch(data.action) {
+      case "join":
+        ws.username = data.username;
+        ws.chatroom = data.chatroom;
+        break;
+      case "message":
+        broadcastMessage(data.chatroom, `${data.username}: ${data.message}`);
+        break;
+      default:
+        console.log("Unknown action");
+    }
+  } catch (error) {
+    console.error("Error parsing message:", error);
+  }
 };
 
-// If a new message is received, the onMessage function is called
-const onMessage = (ws, message) => {
-  console.log("Message received: " + message);
-  ws.send("Hello, you sent -> " + message);
+const broadcastMessage = (chatroom, message) => {
+  for (let client of clients) {
+    if (client.readyState === WebSocket.OPEN && client.chatroom === chatroom) {
+      client.send(message);
+    }
+  }
 };
 
 module.exports = { initializeWebsocketServer };

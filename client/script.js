@@ -1,18 +1,70 @@
 const socket = new WebSocket("ws://localhost:3000");
 
-socket.addEventListener("open", (event) => {
+let username = '';
+let chatroom = '';
+
+socket.addEventListener("open", () => {
   console.log("WebSocket connected!");
-  socket.send("Hello, server!");
 });
 
 socket.addEventListener("message", (event) => {
-  console.log(`Received message: ${event.data}`);
+  try {
+    const data = JSON.parse(event.data);
+    if (data.action === "message") {
+      displayMessage(`${data.username}: ${data.message}`);
+    } else {
+      console.log(`Received non-chat message: ${event.data}`);
+    }
+  } catch (error) {
+    displayMessage(event.data);
+  }
 });
 
-socket.addEventListener("close", (event) => {
+socket.addEventListener("close", () => {
   console.log("WebSocket closed.");
 });
 
 socket.addEventListener("error", (event) => {
   console.error("WebSocket error:", event);
 });
+
+function setUsername() {
+  username = document.getElementById('username').value;
+  if (username) {
+    console.log('Username set to: ' + username);
+  } else {
+    alert("Please enter a username.");
+  }
+}
+
+function joinChatroom() {
+  chatroom = document.getElementById('chatroom').value;
+  if (chatroom) {
+    document.getElementById('chat-window').style.display = 'block';
+    sendMessageToServer("join", chatroom);
+    console.log('Joined chatroom: ' + chatroom);
+  } else {
+    alert("Please enter a chatroom name.");
+  }
+}
+
+function sendMessage() {
+  const message = document.getElementById('message').value;
+  if (message) {
+    sendMessageToServer("message", chatroom, message);
+    document.getElementById('message').value = '';
+  }
+}
+
+function sendMessageToServer(action, chatroom, message = '') {
+  const messageData = { action: action, username: username, chatroom: chatroom, message: message };
+  socket.send(JSON.stringify(messageData));
+}
+
+function displayMessage(message) {
+  const chatMessages = document.getElementById('chat-messages');
+  const newMessage = document.createElement('div');
+  newMessage.classList.add('message');
+  newMessage.textContent = message;
+  chatMessages.appendChild(newMessage);
+}
