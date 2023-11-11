@@ -10,15 +10,20 @@ socket.addEventListener("open", () => {
 socket.addEventListener("message", (event) => {
   try {
     const data = JSON.parse(event.data);
+    console.log("Received data:", data); 
+
     if (data.action === "message") {
       displayMessage(`${data.username}: ${data.message}`);
-    } else {
-      console.log(`Received non-chat message: ${event.data}`);
+    } else if (data.action === "participants") {
+      console.log("Updating participants list:", data.participants); 
+      updateParticipantsList(data.chatroom, data.participants);
     }
   } catch (error) {
-    displayMessage(event.data);
+    console.error("Error parsing message:", error);
+    displayMessage(event.data); 
   }
 });
+
 
 socket.addEventListener("close", () => {
   console.log("WebSocket closed.");
@@ -32,6 +37,7 @@ function setUsername() {
   username = document.getElementById('username').value;
   if (username) {
     console.log('Username set to: ' + username);
+    sendMessageToServer("join", username);
   } else {
     alert("Please enter a username.");
   }
@@ -67,4 +73,16 @@ function displayMessage(message) {
   newMessage.classList.add('message');
   newMessage.textContent = message;
   chatMessages.appendChild(newMessage);
+}
+
+function updateParticipantsList(chatroom, participants) {
+  const participantsListElement = document.getElementById('participants-list');
+  participantsListElement.innerHTML = '';
+
+  participants.forEach(participant => {
+    console.log("Adding participant:", participant);
+    const li = document.createElement('li');
+    li.textContent = participant;
+    participantsListElement.appendChild(li);
+  });
 }
