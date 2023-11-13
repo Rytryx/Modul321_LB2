@@ -29,10 +29,10 @@ h1 {
 
 input[type="text"] {
     width: calc(100% - 110px);
-    padding: 10px;
-    margin-right: 10px;
+    padding: 10px;  
     border: 1px solid #ddd;
     border-radius: 4px;
+    margin: 5px;
 }
 
 button {
@@ -43,6 +43,7 @@ button {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    margin: 5px;
 }
 
 button:hover {
