@@ -11,11 +11,11 @@ const initializeMariaDB = () => {
   });
 };
 
-const executeSQL = async (query) => {
+const executeSQL = async (query, params) => {
   let conn;
   try {
     conn = await pool.getConnection();
-    const res = await conn.query(query);
+    const res = await conn.query(query, params);
     return res;
   } catch (err) {
     console.log(err);
@@ -31,14 +31,17 @@ const initializeDBSchema = async () => {
     PRIMARY KEY (id)
   );`;
   await executeSQL(userTableQuery);
+
   const messageTableQuery = `CREATE TABLE IF NOT EXISTS messages (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
     message VARCHAR(255) NOT NULL,
+    chatroom VARCHAR(255) NOT NULL,
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users(id)
   );`;
   await executeSQL(messageTableQuery);
 };
+
 
 module.exports = { executeSQL, initializeMariaDB, initializeDBSchema };

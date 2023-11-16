@@ -1,4 +1,5 @@
 const WebSocket = require("ws");
+const { executeSQL } = require('./database');
 const clients = new Set();
 const chatrooms = new Map();
 const usersInChatrooms = new Map();
@@ -10,61 +11,84 @@ const initializeWebsocketServer = (server) => {
     clients.add(ws);
     console.log("New websocket connection");
 
-    ws.on("message", (message) => {
-      handleMessage(ws, message);
+    ws.on("message", async (message) => {
+      console.log('Received:', message.toString());
+      
+      try {
+        const data = JSON.parse(message);
+        switch (data.action) {
+          case 'join':
+            handleJoin(ws, data);
+            break;
+          case 'message':
+            const userId = await ensureUserExists(data.username);
+            const query = `INSERT INTO messages (user_id, message, chatroom) VALUES (?, ?, ?)`;
+            await executeSQL(query, [userId, data.message, data.chatroom]);
+            
+            break;
+          default:
+            console.log('Unbekannte Aktion:', data.action);
+        }
+      } catch (err) {
+        console.error('Error processing message:', err);
+      }
     });
 
     ws.on("close", () => {
-      console.log("Connection closed. Username: ", ws.username, " Room: ", ws.chatroom);
-      if (ws.chatroom && chatrooms.has(ws.chatroom)) {
-        const room = chatrooms.get(ws.chatroom);
-        room.delete(ws);
-
-        if (usersInChatrooms.has(ws.chatroom)) {
-          const users = usersInChatrooms.get(ws.chatroom);
-          users.delete(ws.username);
-          console.log("Updated users in room after disconnection: ", Array.from(users));
-          broadcastRoomParticipants(ws.chatroom);
-        }
-
-        if (room.size === 0) {
-          chatrooms.delete(ws.chatroom);
-        }
-      }
-      clients.delete(ws);
+      handleDisconnection(ws);
     });
   });
 };
 
-const handleMessage = (ws, message) => {
-  try {
-    const data = JSON.parse(message);
-    console.log("Received message: ", data);
-    switch(data.action) {
-      case "join":
-        ws.username = data.username;
-        ws.chatroom = data.chatroom;
+const ensureUserExists = async (username) => {
+  let query = `SELECT id FROM users WHERE name = ?`;
+  let result = await executeSQL(query, [username]);
 
-        if (!chatrooms.has(ws.chatroom)) {
-          chatrooms.set(ws.chatroom, new Set());
-        }
-        chatrooms.get(ws.chatroom).add(ws);
-
-        if (!usersInChatrooms.has(ws.chatroom)) {
-          usersInChatrooms.set(ws.chatroom, new Set());
-        }
-        usersInChatrooms.get(ws.chatroom).add(ws.username);
-        console.log("User joined room: ", ws.username, " Room: ", ws.chatroom);
-
-        broadcastRoomParticipants(ws.chatroom);
-        break;
-      case "message":
-        broadcastMessage(data.chatroom, `${data.username}: ${data.message}`);
-        break;
-    }
-  } catch (error) {
-    console.error("Error handling message:", error);
+  if (result.length === 0) {
+    query = `INSERT INTO users (name) VALUES (?)`;
+    await executeSQL(query, [username]);
+    result = await executeSQL(`SELECT id FROM users WHERE name = ?`, [username]);
   }
+
+  return result[0].id;
+};
+
+const handleJoin = (ws, data) => {
+  ws.username = data.username;
+  ws.chatroom = data.chatroom;
+
+  if (!chatrooms.has(ws.chatroom)) {
+    chatrooms.set(ws.chatroom, new Set());
+  }
+  chatrooms.get(ws.chatroom).add(ws);
+
+  if (!usersInChatrooms.has(ws.chatroom)) {
+    usersInChatrooms.set(ws.chatroom, new Set());
+  }
+  usersInChatrooms.get(ws.chatroom).add(ws.username);
+
+  console.log("User joined room: ", ws.username, " Room: ", ws.chatroom);
+  broadcastRoomParticipants(ws.chatroom);
+};
+
+const handleDisconnection = (ws) => {
+  console.log("Connection closed. Username: ", ws.username, " Room: ", ws.chatroom);
+  if (ws.chatroom && chatrooms.has(ws.chatroom)) {
+    const room = chatrooms.get(ws.chatroom);
+    room.delete(ws);
+
+    if (usersInChatrooms.has(ws.chatroom)) {
+      const users = usersInChatrooms.get(ws.chatroom);
+      users.delete(ws.username);
+      console.log("Updated users in room after disconnection: ", Array.from(users));
+      broadcastRoomParticipants(ws.chatroom);
+    }
+
+    if (room.size === 0) {
+      chatrooms.delete(ws.chatroom);
+    }
+  }
+  clients.delete(ws);
 };
 
 const broadcastMessage = (chatroom, message) => {
