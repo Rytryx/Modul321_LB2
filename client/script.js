@@ -36,7 +36,7 @@ function setUsername() {
   username = document.getElementById('username').value;
   if (username) {
     console.log('Username set to: ' + username);
-    sendMessageToServer("join", username); // Benutzer automatisch dem Raum beitreten lassen
+    sendMessageToServer("join", username);
   } else {
     alert("Please enter a username.");
   }
