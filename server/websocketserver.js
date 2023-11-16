@@ -19,19 +19,20 @@ const initializeWebsocketServer = (server) => {
         switch (data.action) {
           case 'join':
             handleJoin(ws, data);
+            broadcastMessage(data.chatroom, `${data.username}: ${data.message}`);
             break;
           case 'message':
             const userId = await ensureUserExists(data.username);
             const query = `INSERT INTO messages (user_id, message, chatroom) VALUES (?, ?, ?)`;
             await executeSQL(query, [userId, data.message, data.chatroom]);
-            
+            broadcastMessage(data.chatroom, `${data.username}: ${data.message}`);
             break;
           default:
             console.log('Unbekannte Aktion:', data.action);
         }
       } catch (err) {
         console.error('Error processing message:', err);
-      }
+      }  
     });
 
     ws.on("close", () => {
@@ -91,14 +92,21 @@ const handleDisconnection = (ws) => {
   clients.delete(ws);
 };
 
-const broadcastMessage = (chatroom, message) => {
-  console.log("Broadcasting message to room: ", chatroom, " Message: ", message);
-  for (let client of clients) {
-    if (client.readyState === WebSocket.OPEN && client.chatroom === chatroom) {
-      client.send(message);
-    }
+const broadcastMessage = async (chatroom) => {
+  try {
+    const query = `SELECT u.name, m.message FROM messages m JOIN users u ON m.user_id = u.id WHERE m.chatroom = ? ORDER BY m.id`;
+    const messages = await executeSQL(query, [chatroom]);
+    const messageList = messages.map(msg => `${msg.name}: ${msg.message}`).join('\n');
+    clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.chatroom === chatroom) {
+        client.send(messageList);
+      }
+    });
+  } catch (err) {
+    console.error('Error broadcasting messages:', err);
   }
 };
+
 
 const broadcastRoomParticipants = (chatroom) => {
   const participants = Array.from(usersInChatrooms.get(chatroom) || []);

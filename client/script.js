@@ -68,10 +68,14 @@ function sendMessageToServer(action, chatroom, message = '') {
 
 function displayMessage(message) {
   const chatMessages = document.getElementById('chat-messages');
-  const newMessage = document.createElement('div');
-  newMessage.classList.add('message');
-  newMessage.textContent = message;
-  chatMessages.appendChild(newMessage);
+  const messageLines = message.split('\n');
+
+  messageLines.forEach(line => {
+    const newMessage = document.createElement('div');
+    newMessage.classList.add('message');
+    newMessage.textContent = line;
+    chatMessages.appendChild(newMessage);
+  });
 }
 
 function updateParticipantsList(participants) {
