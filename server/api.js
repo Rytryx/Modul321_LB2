@@ -1,6 +1,10 @@
 const WebSocket = require('ws');
 const { executeSQL } = require('./database');
 
+const hello = (req, res) => {
+  res.send("Hello World!");
+};
+
 const initializeAPI = (app) => {
   app.get("/api/hello", hello);
 
@@ -30,10 +34,6 @@ const initializeAPI = (app) => {
       server.emit('connection', newSocket, request);
     });
   });
-};
-
-const hello = (req, res) => {
-  res.send("Hello World!");
 };
 
 module.exports = { initializeAPI };

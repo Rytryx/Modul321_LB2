@@ -4,6 +4,13 @@ const clients = new Set();
 const chatrooms = new Map();
 const usersInChatrooms = new Map();
 
+const isUsernameAvailableInChatroom = (username, chatroom) => {
+  if (usersInChatrooms.has(chatroom)) {
+    return !usersInChatrooms.get(chatroom).has(username);
+  }
+  return true;
+};
+
 const initializeWebsocketServer = (server) => {
   const websocketServer = new WebSocket.Server({ server });
 
@@ -18,8 +25,11 @@ const initializeWebsocketServer = (server) => {
         const data = JSON.parse(message);
         switch (data.action) {
           case 'join':
-            handleJoin(ws, data);
-            broadcastMessage(data.chatroom, `${data.username}: ${data.message}`);
+            if (isUsernameAvailableInChatroom(data.username, data.chatroom)) {
+              handleJoin(ws, data);
+            } else {
+              ws.send(JSON.stringify({ error: "Username already taken in this chatroom." }));
+            }
             break;
           case 'message':
             const userId = await ensureUserExists(data.username);
@@ -70,6 +80,8 @@ const handleJoin = (ws, data) => {
 
   console.log("User joined room: ", ws.username, " Room: ", ws.chatroom);
   broadcastRoomParticipants(ws.chatroom);
+
+  ws.send(JSON.stringify({ action: "joinSuccess" }));
 };
 
 const handleDisconnection = (ws) => {

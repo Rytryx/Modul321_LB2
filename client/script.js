@@ -10,17 +10,25 @@ socket.addEventListener("open", () => {
 socket.addEventListener("message", (event) => {
   try {
     const data = JSON.parse(event.data);
-    console.log("Received data:", data); 
 
-    if (data.action === "message") {
+    if (data.error) {
+      alert(data.error);
+      document.getElementById('username').value = '';
+      document.getElementById('chatroom').value = '';
+      return;
+    }
+
+    if (data.action === "joinSuccess") {
+      document.getElementById('chat-window').style.display = 'block';
+      console.log('Successfully joined chatroom: ' + chatroom);
+    } else if (data.action === "message") {
       displayMessage(`${data.username}: ${data.message}`);
     } else if (data.action === "participants" && data.chatroom === chatroom) {
-      console.log("Updating participants list:", data.participants); 
       updateParticipantsList(data.participants);
     }
   } catch (error) {
     console.error("Error parsing message:", error);
-    displayMessage(event.data); 
+    displayMessage(event.data);
   }
 });
 
@@ -34,22 +42,20 @@ socket.addEventListener("error", (event) => {
 
 function setUsername() {
   username = document.getElementById('username').value;
-  if (username) {
-    console.log('Username set to: ' + username);
-    sendMessageToServer("join", username);
-  } else {
+  if (!username) {
     alert("Please enter a username.");
   }
 }
 
 function joinChatroom() {
+  username = document.getElementById('username').value;
   chatroom = document.getElementById('chatroom').value;
-  if (chatroom) {
-    document.getElementById('chat-window').style.display = 'block';
+
+  if (username && chatroom) {
     sendMessageToServer("join", chatroom);
-    console.log('Joined chatroom: ' + chatroom);
+    console.log('Attempting to join chatroom: ' + chatroom);
   } else {
-    alert("Please enter a chatroom name.");
+    alert("Please enter a username and chatroom name.");
   }
 }
 
