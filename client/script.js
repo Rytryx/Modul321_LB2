@@ -18,7 +18,9 @@ socket.addEventListener("message", (event) => {
       return;
     }
 
-    if (data.action === "joinSuccess") {
+    if (data.action === "previousMessages") {
+      displayMessage(data.content);
+    } else if (data.action === "joinSuccess") {
       document.getElementById('chat-window').style.display = 'block';
       console.log('Successfully joined chatroom: ' + chatroom);
     } else if (data.action === "message") {
@@ -31,6 +33,7 @@ socket.addEventListener("message", (event) => {
     displayMessage(event.data);
   }
 });
+
 
 socket.addEventListener("close", () => {
   console.log("WebSocket closed.");
@@ -74,6 +77,8 @@ function sendMessageToServer(action, chatroom, message = '') {
 
 function displayMessage(message) {
   const chatMessages = document.getElementById('chat-messages');
+  chatMessages.innerHTML = '';
+
   const messageLines = message.split('\n');
 
   messageLines.forEach(line => {
