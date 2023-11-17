@@ -27,5 +27,18 @@ services:
     ports:
       - 9200:80
 
+  chatapp:
+    build: projekt_lb2_modul321:latest
+    ports:
+      - 3000:3000
+    depends_on:
+      - mariadb
+    environment:
+      - DB_HOST=mariadb
+      - DB_USER=mychat
+      - DB_PASSWORD=mychatpassword
+      - DB_NAME=mychat
+    restart: always
+
 volumes:
   m321_project_mariadb:
